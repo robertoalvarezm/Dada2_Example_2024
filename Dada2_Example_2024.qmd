@@ -246,7 +246,7 @@ En esta parte se mapean las lecturas resultantes a una base de datos, en este ca
 
 Deben  descargar la versión más reciente disponible [Silva for Dada 2](https://benjjneb.github.io/dada2/training.html)
 
-Esta parte **puede** ser computacionalmente pesada. Ya generé el objeto [acá]("03_Results/taxa.RDS")
+Esta parte **puede** ser computacionalmente pesada. Ya generé el objeto en 03_Results/taxa.RDS
 
 
 ```r
@@ -254,6 +254,7 @@ taxa <- assignTaxonomy(seqtab.nochim, "01_Raw_Data/silva_nr_v132_train_set.fa.gz
 #saveRDS(taxa, file="03_Results/taxa.RDS")
 #writeRDS(file="03_Results/taxa.RDS")
 ```
+
 ::: footer
 :::
 
@@ -262,7 +263,7 @@ En esta parte se mapean las lecturas resultantes a una base de datos, en este ca
 
 Deben  descargar la versión más reciente disponible [Silva for Dada 2](https://benjjneb.github.io/dada2/training.html)
 
-Esta parte **puede** ser computacionalmente pesada. Ya generé el objeto [acá]("03_Results/taxa.RDS")
+Esta parte **puede** ser computacionalmente pesada. Ya generé el objeto en 03_Results/taxa.RDS
 
 
 ```r
@@ -311,6 +312,75 @@ rownames(taxid) <- getSequences(seqtab.nochim)
 ::: footer
 :::
 
+##  Data Frame con los metadatos
+
+Construimos un dataset con los metadatos de interés
+
+```r
+library(phyloseq)
+library(Biostrings)
+library(ggplot2)
+theme_set(theme_bw())
+samples.out <- rownames(seqtab.nochim)
+subject <- sapply(strsplit(samples.out, "D"), `[`, 1)
+gender <- substr(subject,1,1)
+subject <- substr(subject,2,999)
+day <- as.integer(sapply(strsplit(samples.out, "D"), `[`, 2))
+samdf <- data.frame(Subject=subject, Gender=gender, Day=day)
+samdf$When <- "Early"
+samdf$When[samdf$Day>100] <- "Late"
+rownames(samdf) <- samples.out
+```
+
+::: footer
+:::
+
+## Phyloseq
+
+```r
+ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
+               sample_data(samdf), 
+               tax_table(taxa))
+ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
+dna <- Biostrings::DNAStringSet(taxa_names(ps))
+names(dna) <- taxa_names(ps)
+ps <- merge_phyloseq(ps, dna)
+taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
+ps
+save(ps,file="03_Results/ps.RDS")
+```
+::: footer
+:::
+
+## Visualizar la diversidad
+
+```r
+jpeg("03_Results/Alfa_Diversity.jpeg")
+plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
+dev.off()
+```
+![Alpha Diversity](03_Results/Alfa_Diversity.jpeg)
+
+::: footer
+
+:::
+
+##  Diversidad beta
+
+```r
+# Transform data to proportions as appropriate for Bray-Curtis distances
+ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
+jpeg("03_Results/NMDS.jpeg")
+plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
+dev.off()
+```
+![Diversidad Beta](03_Results/NMDS.jpeg){width=300}
+
+
+::: footer
+
+:::
 
 ## Acá empieza el ejemplo
 
