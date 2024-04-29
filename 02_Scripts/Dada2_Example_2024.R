@@ -77,4 +77,45 @@ head(track)
 
 taxa <- assignTaxonomy(seqtab.nochim, "01_Raw_Data/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
 saveRDS(taxa, file="03_Results/taxa.RDS")
-readRDS("03_Results/taxa.RDS")
+#readRDS("03_Results/taxa.RDS")
+
+
+taxa <- addSpecies(taxa, "01_Raw_Data/silva_species_assignment_v138.1.fa.gz")
+saveRDS(taxa, file="03_Results/taxa.RDS")
+#readRDS("03_Results/taxa.RDS")
+
+
+
+taxa.print <- taxa # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+saveRDS(taxa.print, file="03_Results/taxa.print.RDS")
+#readRDS("03_Results/taxa.print.RDS")
+
+
+library(DECIPHER)
+
+dna <- DNAStringSet(getSequences(seqtab.nochim)) # Create a DNAStringSet from the ASVs
+load("01_Raw_Data/SILVA_SSU_r138_2019.RData") # CHANGE TO THE PATH OF YOUR TRAINING SET
+ids <- IdTaxa(dna, trainingSet, strand="top", processors=NULL, verbose=FALSE) # use all processors
+ranks <- c("domain", "phylum", "class", "order", "family", "genus", "species") # ranks of interest
+# Convert the output object of class "Taxa" to a matrix analogous to the output from assignTaxonomy
+taxid <- t(sapply(ids, function(x) {
+  m <- match(ranks, x$rank)
+  taxa <- x$taxon[m]
+  taxa[startsWith(taxa, "unclassified_")] <- NA
+  taxa
+}))
+colnames(taxid) <- ranks; 
+rownames(taxid) <- getSequences(seqtab.nochim)
+saveRDS(taxid,file="03_Results/taxid.RDS")
+readRDS(file="03_Results/taxid.RDS")
+
+
+unqs.mock <- seqtab.nochim["Mock",]
+unqs.mock <- sort(unqs.mock[unqs.mock>0], decreasing=TRUE) # Drop ASVs absent in the Mock
+cat("DADA2 inferred", length(unqs.mock), "sample sequences present in the Mock community.\n")
+mock.ref <- getSequences(file.path(path, "HMP_MOCK.v35.fasta"))
+match.ref <- sum(sapply(names(unqs.mock), function(x) any(grepl(x, mock.ref))))
+cat("Of those,", sum(match.ref), "were exact matches to the expected reference sequences.\n")
+

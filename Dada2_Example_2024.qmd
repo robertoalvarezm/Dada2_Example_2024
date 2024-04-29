@@ -254,6 +254,62 @@ taxa <- assignTaxonomy(seqtab.nochim, "01_Raw_Data/silva_nr_v132_train_set.fa.gz
 #saveRDS(taxa, file="03_Results/taxa.RDS")
 #writeRDS(file="03_Results/taxa.RDS")
 ```
+::: footer
+:::
+
+## Asignación taxónomica
+En esta parte se mapean las lecturas resultantes a una base de datos, en este caso SILVA para hacer la asignación.
+
+Deben  descargar la versión más reciente disponible [Silva for Dada 2](https://benjjneb.github.io/dada2/training.html)
+
+Esta parte **puede** ser computacionalmente pesada. Ya generé el objeto [acá]("03_Results/taxa.RDS")
+
+
+```r
+taxa <- assignTaxonomy(seqtab.nochim, "01_Raw_Data/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
+#saveRDS(taxa, file="03_Results/taxa.RDS")
+#writeRDS(file="03_Results/taxa.RDS")
+taxa <- addSpecies(taxa, "01_Raw_Data/silva_species_assignment_v138.1.fa.gz")
+saveRDS(taxa, file="03_Results/taxa.RDS")
+#readRDS("03_Results/taxa.RDS")
+``` 
+::: footer
+:::
+
+## Objeto más simple
+
+```r
+taxa.print <- taxa # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+::: footer
+:::
+
+## Opcional: obligar a llegar nivel de especie
+
+La base de datos está [acá](http://www2.decipher.codes/Classification/TrainingSets/SILVA_SSU_r138_2019.RData)
+
+```r
+library(DECIPHER)
+dna <- DNAStringSet(getSequences(seqtab.nochim)) # Create a DNAStringSet from the ASVs
+load("01_Raw_Data/SILVA_SSU_r138_2019.RData") # CHANGE TO THE PATH OF YOUR TRAINING SET
+ids <- IdTaxa(dna, trainingSet, strand="top", processors=NULL, verbose=FALSE) # use all processors
+ranks <- c("domain", "phylum", "class", "order", "family", "genus", "species") # ranks of interest
+# Convert the output object of class "Taxa" to a matrix analogous to the output from assignTaxonomy
+taxid <- t(sapply(ids, function(x) {
+  m <- match(ranks, x$rank)
+  taxa <- x$taxon[m]
+  taxa[startsWith(taxa, "unclassified_")] <- NA
+  taxa
+}))
+colnames(taxid) <- ranks 
+rownames(taxid) <- getSequences(seqtab.nochim)
+```
+
+::: footer
+:::
 
 
 ## Acá empieza el ejemplo
