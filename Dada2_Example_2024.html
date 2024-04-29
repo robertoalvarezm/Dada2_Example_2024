@@ -571,10 +571,52 @@ Roberto Álvarez
 <h2>El algoritmo de inferencia</h2>
 <div class="sourceCode" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>dadaFs <span class="ot">&lt;-</span> <span class="fu">dada</span>(filtFs, <span class="at">err=</span>errF, <span class="at">multithread=</span><span class="cn">TRUE</span>)</span>
 <span id="cb11-2"><a href="#cb11-2"></a>dadaRs <span class="ot">&lt;-</span> <span class="fu">dada</span>(filtRs, <span class="at">err=</span>errR, <span class="at">multithread=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="footer">
+
+</div>
 </section>
 <section id="mezclar-ambos-sentidos" class="slide level2">
 <h2>Mezclar ambos sentidos</h2>
-<div class="sourceCode" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>mergers <span class="ot">&lt;-</span> <span class="fu">mergePairs</span>(dadaFs, filtFs, dadaRs, filtRs, <span class="at">verbose=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co">#| echo: true</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a>mergers <span class="ot">&lt;-</span> <span class="fu">mergePairs</span>(dadaFs, filtFs, dadaRs, filtRs, <span class="at">verbose=</span><span class="cn">TRUE</span>)</span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="co">#saveRDS(mergers, file="03_Results/mergers.RDS")</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a>mergers</span>
+<span id="cb12-5"><a href="#cb12-5"></a>seqtab <span class="ot">&lt;-</span> <span class="fu">makeSequenceTable</span>(mergers)</span>
+<span id="cb12-6"><a href="#cb12-6"></a><span class="fu">dim</span>(seqtab)</span>
+<span id="cb12-7"><a href="#cb12-7"></a><span class="co">#saveRDS(seqtab, file="03_Results/seqtab.RDS")</span></span>
+<span id="cb12-8"><a href="#cb12-8"></a>seqtab</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="footer">
+
+</div>
+</section>
+<section id="remover-quimeras" class="slide level2">
+<h2>Remover quimeras</h2>
+<div class="sourceCode" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>seqtab.nochim <span class="ot">&lt;-</span> <span class="fu">removeBimeraDenovo</span>(seqtab, <span class="at">method=</span><span class="st">"consensus"</span>, <span class="at">multithread=</span><span class="cn">TRUE</span>, <span class="at">verbose=</span><span class="cn">TRUE</span>)</span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="fu">sum</span>(seqtab.nochim)<span class="sc">/</span><span class="fu">sum</span>(seqtab)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="footer">
+
+</div>
+</section>
+<section id="estadístico-de-cómo-quedó-la-asignación" class="slide level2">
+<h2>Estadístico de cómo quedó la asignación</h2>
+<div class="sourceCode" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>getN <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sum</span>(<span class="fu">getUniques</span>(x))</span>
+<span id="cb14-2"><a href="#cb14-2"></a>track <span class="ot">&lt;-</span> <span class="fu">cbind</span>(out, <span class="fu">sapply</span>(dadaFs, getN), <span class="fu">sapply</span>(dadaRs, getN), <span class="fu">sapply</span>(mergers, getN), <span class="fu">rowSums</span>(seqtab.nochim))</span>
+<span id="cb14-3"><a href="#cb14-3"></a><span class="co"># If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)</span></span>
+<span id="cb14-4"><a href="#cb14-4"></a><span class="fu">colnames</span>(track) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"input"</span>, <span class="st">"filtered"</span>, <span class="st">"denoisedF"</span>, <span class="st">"denoisedR"</span>, <span class="st">"merged"</span>, <span class="st">"nonchim"</span>)</span>
+<span id="cb14-5"><a href="#cb14-5"></a><span class="fu">rownames</span>(track) <span class="ot">&lt;-</span> sample.names</span>
+<span id="cb14-6"><a href="#cb14-6"></a><span class="fu">head</span>(track)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="footer">
+
+</div>
+</section>
+<section id="asignación-taxónomica" class="slide level2">
+<h2>Asignación taxónomica</h2>
+<p>En esta parte se mapean las lecturas resultantes a una base de datos, en este caso SILVA para hacer la asignación.</p>
+<p>Deben descargar la versión más reciente disponible <a href="https://benjjneb.github.io/dada2/training.html">Silva for Dada 2</a></p>
+<p>Esta parte <strong>puede</strong> ser computacionalmente pesada. Ya generé el objeto <a href="%2203_Results/taxa.RDS%22">acá</a></p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a>taxa <span class="ot">&lt;-</span> <span class="fu">assignTaxonomy</span>(seqtab.nochim, <span class="st">"01_Raw_Data/silva_nr_v132_train_set.fa.gz"</span>, <span class="at">multithread=</span><span class="cn">TRUE</span>)</span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="co">#saveRDS(taxa, file="03_Results/taxa.RDS")</span></span>
+<span id="cb15-3"><a href="#cb15-3"></a><span class="co">#writeRDS(file="03_Results/taxa.RDS")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="acá-empieza-el-ejemplo" class="slide level2">
 <h2>Acá empieza el ejemplo</h2>
@@ -594,14 +636,14 @@ Roberto Álvarez
 <li>Over 20 syntax highlighting themes available</li>
 <li>Default theme optimized for accessibility</li>
 </ul>
-<div class="sourceCode" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy" data-id="quarto-animate-code"><code class="sourceCode r hljs"><span id="cb13-1" class="hljs-ln-code"><a href="#cb13-1"></a><span class="co"># Define a server for the Shiny app</span></span>
-<span id="cb13-2" class="hljs-ln-code"><a href="#cb13-2"></a><span class="cf">function</span>(input, output) {</span>
-<span id="cb13-3" class="hljs-ln-code"><a href="#cb13-3"></a>  </span>
-<span id="cb13-4" class="hljs-ln-code"><a href="#cb13-4"></a>  <span class="co"># Fill in the spot we created for a plot</span></span>
-<span id="cb13-5" class="hljs-ln-code"><a href="#cb13-5"></a>  output<span class="sc">$</span>phonePlot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
-<span id="cb13-6" class="hljs-ln-code"><a href="#cb13-6"></a>    <span class="co"># Render a barplot</span></span>
-<span id="cb13-7" class="hljs-ln-code"><a href="#cb13-7"></a>  })</span>
-<span id="cb13-8" class="hljs-ln-code"><a href="#cb13-8"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy" data-id="quarto-animate-code"><code class="sourceCode r hljs"><span id="cb16-1" class="hljs-ln-code"><a href="#cb16-1"></a><span class="co"># Define a server for the Shiny app</span></span>
+<span id="cb16-2" class="hljs-ln-code"><a href="#cb16-2"></a><span class="cf">function</span>(input, output) {</span>
+<span id="cb16-3" class="hljs-ln-code"><a href="#cb16-3"></a>  </span>
+<span id="cb16-4" class="hljs-ln-code"><a href="#cb16-4"></a>  <span class="co"># Fill in the spot we created for a plot</span></span>
+<span id="cb16-5" class="hljs-ln-code"><a href="#cb16-5"></a>  output<span class="sc">$</span>phonePlot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb16-6" class="hljs-ln-code"><a href="#cb16-6"></a>    <span class="co"># Render a barplot</span></span>
+<span id="cb16-7" class="hljs-ln-code"><a href="#cb16-7"></a>  })</span>
+<span id="cb16-8" class="hljs-ln-code"><a href="#cb16-8"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="footer">
 <p>Learn more: <a href="https://quarto.org/docs/output-formats/html-code.html#highlighting">Syntax Highlighting</a></p>
 </div>
@@ -612,18 +654,18 @@ Roberto Álvarez
 <li>Over 20 syntax highlighting themes available</li>
 <li>Default theme optimized for accessibility</li>
 </ul>
-<div class="sourceCode" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy" data-id="quarto-animate-code"><code class="sourceCode r hljs"><span id="cb14-1" class="hljs-ln-code"><a href="#cb14-1"></a><span class="co"># Define a server for the Shiny app</span></span>
-<span id="cb14-2" class="hljs-ln-code"><a href="#cb14-2"></a><span class="cf">function</span>(input, output) {</span>
-<span id="cb14-3" class="hljs-ln-code"><a href="#cb14-3"></a>  </span>
-<span id="cb14-4" class="hljs-ln-code"><a href="#cb14-4"></a>  <span class="co"># Fill in the spot we created for a plot</span></span>
-<span id="cb14-5" class="hljs-ln-code"><a href="#cb14-5"></a>  output<span class="sc">$</span>phonePlot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
-<span id="cb14-6" class="hljs-ln-code"><a href="#cb14-6"></a>    <span class="co"># Render a barplot</span></span>
-<span id="cb14-7" class="hljs-ln-code"><a href="#cb14-7"></a>    <span class="fu">barplot</span>(WorldPhones[,input<span class="sc">$</span>region]<span class="sc">*</span><span class="dv">1000</span>, </span>
-<span id="cb14-8" class="hljs-ln-code"><a href="#cb14-8"></a>            <span class="at">main=</span>input<span class="sc">$</span>region,</span>
-<span id="cb14-9" class="hljs-ln-code"><a href="#cb14-9"></a>            <span class="at">ylab=</span><span class="st">"Number of Telephones"</span>,</span>
-<span id="cb14-10" class="hljs-ln-code"><a href="#cb14-10"></a>            <span class="at">xlab=</span><span class="st">"Year"</span>)</span>
-<span id="cb14-11" class="hljs-ln-code"><a href="#cb14-11"></a>  })</span>
-<span id="cb14-12" class="hljs-ln-code"><a href="#cb14-12"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy" data-id="quarto-animate-code"><code class="sourceCode r hljs"><span id="cb17-1" class="hljs-ln-code"><a href="#cb17-1"></a><span class="co"># Define a server for the Shiny app</span></span>
+<span id="cb17-2" class="hljs-ln-code"><a href="#cb17-2"></a><span class="cf">function</span>(input, output) {</span>
+<span id="cb17-3" class="hljs-ln-code"><a href="#cb17-3"></a>  </span>
+<span id="cb17-4" class="hljs-ln-code"><a href="#cb17-4"></a>  <span class="co"># Fill in the spot we created for a plot</span></span>
+<span id="cb17-5" class="hljs-ln-code"><a href="#cb17-5"></a>  output<span class="sc">$</span>phonePlot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb17-6" class="hljs-ln-code"><a href="#cb17-6"></a>    <span class="co"># Render a barplot</span></span>
+<span id="cb17-7" class="hljs-ln-code"><a href="#cb17-7"></a>    <span class="fu">barplot</span>(WorldPhones[,input<span class="sc">$</span>region]<span class="sc">*</span><span class="dv">1000</span>, </span>
+<span id="cb17-8" class="hljs-ln-code"><a href="#cb17-8"></a>            <span class="at">main=</span>input<span class="sc">$</span>region,</span>
+<span id="cb17-9" class="hljs-ln-code"><a href="#cb17-9"></a>            <span class="at">ylab=</span><span class="st">"Number of Telephones"</span>,</span>
+<span id="cb17-10" class="hljs-ln-code"><a href="#cb17-10"></a>            <span class="at">xlab=</span><span class="st">"Year"</span>)</span>
+<span id="cb17-11" class="hljs-ln-code"><a href="#cb17-11"></a>  })</span>
+<span id="cb17-12" class="hljs-ln-code"><a href="#cb17-12"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="footer">
 <p>Learn more: <a href="https://quarto.org/docs/presentations/revealjs/advanced.html#code-animations">Code Animations</a></p>
 </div>
@@ -634,16 +676,16 @@ Roberto Álvarez
 <li>Highlight specific lines for emphasis</li>
 <li>Incrementally highlight additional lines</li>
 </ul>
-<div class="sourceCode" id="cb15" data-code-line-numbers="4-5|7|10"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb15-2"><a href="#cb15-2"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb15-3"><a href="#cb15-3"></a></span>
-<span id="cb15-4"><a href="#cb15-4"></a>r <span class="op">=</span> np.arange(<span class="dv">0</span>, <span class="dv">2</span>, <span class="fl">0.01</span>)</span>
-<span id="cb15-5"><a href="#cb15-5"></a>theta <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> np.pi <span class="op">*</span> r</span>
-<span id="cb15-6"><a href="#cb15-6"></a>fig, ax <span class="op">=</span> plt.subplots(subplot_kw<span class="op">=</span>{<span class="st">'projection'</span>: <span class="st">'polar'</span>})</span>
-<span id="cb15-7"><a href="#cb15-7"></a>ax.plot(theta, r)</span>
-<span id="cb15-8"><a href="#cb15-8"></a>ax.set_rticks([<span class="fl">0.5</span>, <span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">2</span>])</span>
-<span id="cb15-9"><a href="#cb15-9"></a>ax.grid(<span class="va">True</span>)</span>
-<span id="cb15-10"><a href="#cb15-10"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb18" data-code-line-numbers="4-5|7|10"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb18-3"><a href="#cb18-3"></a></span>
+<span id="cb18-4"><a href="#cb18-4"></a>r <span class="op">=</span> np.arange(<span class="dv">0</span>, <span class="dv">2</span>, <span class="fl">0.01</span>)</span>
+<span id="cb18-5"><a href="#cb18-5"></a>theta <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> np.pi <span class="op">*</span> r</span>
+<span id="cb18-6"><a href="#cb18-6"></a>fig, ax <span class="op">=</span> plt.subplots(subplot_kw<span class="op">=</span>{<span class="st">'projection'</span>: <span class="st">'polar'</span>})</span>
+<span id="cb18-7"><a href="#cb18-7"></a>ax.plot(theta, r)</span>
+<span id="cb18-8"><a href="#cb18-8"></a>ax.set_rticks([<span class="fl">0.5</span>, <span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">2</span>])</span>
+<span id="cb18-9"><a href="#cb18-9"></a>ax.grid(<span class="va">True</span>)</span>
+<span id="cb18-10"><a href="#cb18-10"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="footer">
 <p>Learn more: <a href="https://quarto.org/docs/presentations/revealjs/#line-highlighting">Line Highlighting</a></p>
 </div>
@@ -651,10 +693,10 @@ Roberto Álvarez
 <section id="executable-code" class="slide level2">
 <h2>Executable Code</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb16-2"><a href="#cb16-2"></a><span class="fu">ggplot</span>(mtcars, <span class="fu">aes</span>(hp, mpg, <span class="at">color =</span> am)) <span class="sc">+</span></span>
-<span id="cb16-3"><a href="#cb16-3"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb16-4"><a href="#cb16-4"></a>  <span class="fu">geom_smooth</span>(<span class="at">formula =</span> y <span class="sc">~</span> x, <span class="at">method =</span> <span class="st">"loess"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb19-2"><a href="#cb19-2"></a><span class="fu">ggplot</span>(mtcars, <span class="fu">aes</span>(hp, mpg, <span class="at">color =</span> am)) <span class="sc">+</span></span>
+<span id="cb19-3"><a href="#cb19-3"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb19-4"><a href="#cb19-4"></a>  <span class="fu">geom_smooth</span>(<span class="at">formula =</span> y <span class="sc">~</span> x, <span class="at">method =</span> <span class="st">"loess"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 </div>
 <img data-src="Dada2_Example_2024_files/figure-revealjs/unnamed-chunk-1-1.png" width="960" class="r-stretch"><div class="footer">
@@ -666,17 +708,17 @@ Roberto Álvarez
 <p><a href="https://www.mathjax.org/">MathJax</a> rendering of equations to HTML</p>
 <div class="columns">
 <div class="column" style="width:40%;">
-<div class="sourceCode" id="cb17"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb17-1"><a href="#cb17-1"></a><span class="kw">\begin</span>{<span class="ex">gather*</span>}</span>
-<span id="cb17-2"><a href="#cb17-2"></a><span class="ss">a_1=b_1+c_1</span><span class="sc">\\</span></span>
-<span id="cb17-3"><a href="#cb17-3"></a><span class="ss">a_2=b_2+c_2-d_2+e_2</span></span>
-<span id="cb17-4"><a href="#cb17-4"></a><span class="kw">\end</span>{<span class="ex">gather*</span>}</span>
-<span id="cb17-5"><a href="#cb17-5"></a></span>
-<span id="cb17-6"><a href="#cb17-6"></a><span class="kw">\begin</span>{<span class="ex">align</span>}</span>
-<span id="cb17-7"><a href="#cb17-7"></a><span class="ss">a_{11}&amp; =b_{11}&amp;</span></span>
-<span id="cb17-8"><a href="#cb17-8"></a><span class="ss">  a_{12}&amp; =b_{12}</span><span class="sc">\\</span></span>
-<span id="cb17-9"><a href="#cb17-9"></a><span class="ss">a_{21}&amp; =b_{21}&amp;</span></span>
-<span id="cb17-10"><a href="#cb17-10"></a><span class="ss">  a_{22}&amp; =b_{22}+c_{22}</span></span>
-<span id="cb17-11"><a href="#cb17-11"></a><span class="kw">\end</span>{<span class="ex">align</span>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb20-1"><a href="#cb20-1"></a><span class="kw">\begin</span>{<span class="ex">gather*</span>}</span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="ss">a_1=b_1+c_1</span><span class="sc">\\</span></span>
+<span id="cb20-3"><a href="#cb20-3"></a><span class="ss">a_2=b_2+c_2-d_2+e_2</span></span>
+<span id="cb20-4"><a href="#cb20-4"></a><span class="kw">\end</span>{<span class="ex">gather*</span>}</span>
+<span id="cb20-5"><a href="#cb20-5"></a></span>
+<span id="cb20-6"><a href="#cb20-6"></a><span class="kw">\begin</span>{<span class="ex">align</span>}</span>
+<span id="cb20-7"><a href="#cb20-7"></a><span class="ss">a_{11}&amp; =b_{11}&amp;</span></span>
+<span id="cb20-8"><a href="#cb20-8"></a><span class="ss">  a_{12}&amp; =b_{12}</span><span class="sc">\\</span></span>
+<span id="cb20-9"><a href="#cb20-9"></a><span class="ss">a_{21}&amp; =b_{21}&amp;</span></span>
+<span id="cb20-10"><a href="#cb20-10"></a><span class="ss">  a_{22}&amp; =b_{22}+c_{22}</span></span>
+<span id="cb20-11"><a href="#cb20-11"></a><span class="kw">\end</span>{<span class="ex">align</span>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div><div class="column" style="width:60%;">
 <span class="math display">\[\begin{gather*}
 a_1=b_1+c_1\\
@@ -1443,8 +1485,8 @@ a_{21}&amp; =b_{21}&amp;
 <p>Include Jupyter widgets and htmlwidgets in your presentations</p>
 <div class="cell">
 <div class="cell-output-display">
-<div class="leaflet html-widget html-fill-item" id="htmlwidget-1f217402c3a986d6b62e" style="width:960px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-1f217402c3a986d6b62e">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"https://openstreetmap.org/copyright/\">OpenStreetMap<\/a>,  <a href=\"https://opendatacommons.org/licenses/odbl/\">ODbL<\/a>"}]},{"method":"addMarkers","args":[-36.852,174.768,null,null,null,{"interactive":true,"draggable":false,"keyboard":true,"title":"","alt":"","zIndexOffset":0,"opacity":1,"riseOnHover":false,"riseOffset":250},"The birthplace of R",null,null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]}],"limits":{"lat":[-36.852,-36.852],"lng":[174.768,174.768]}},"evals":[],"jsHooks":[]}</script>
+<div class="leaflet html-widget html-fill-item" id="htmlwidget-35e5e8984d1222079d82" style="width:960px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-35e5e8984d1222079d82">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"https://openstreetmap.org/copyright/\">OpenStreetMap<\/a>,  <a href=\"https://opendatacommons.org/licenses/odbl/\">ODbL<\/a>"}]},{"method":"addMarkers","args":[-36.852,174.768,null,null,null,{"interactive":true,"draggable":false,"keyboard":true,"title":"","alt":"","zIndexOffset":0,"opacity":1,"riseOnHover":false,"riseOffset":250},"The birthplace of R",null,null,null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]}],"limits":{"lat":[-36.852,-36.852],"lng":[174.768,174.768]}},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 <div class="footer">

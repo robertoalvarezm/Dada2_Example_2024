@@ -197,27 +197,62 @@ dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 ```
 
+::: footer
+:::
+
 ## Mezclar ambos sentidos
 
 ```r
+#| echo: true
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
 #saveRDS(mergers, file="03_Results/mergers.RDS")
 mergers
 seqtab <- makeSequenceTable(mergers)
 dim(seqtab)
 #saveRDS(seqtab, file="03_Results/seqtab.RDS")
+seqtab
 ```
 
+::: footer
+:::
 
 
-## Objeto seqtab
+## Remover quimeras
 
-```{r}
-#| echo: true
-readRDS("03_Results/seqtab.RDS")
-seqtab
-#library(DT)
-#datatable(as.data.frame(seqtab))
+
+```r
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+sum(seqtab.nochim)/sum(seqtab)
+```
+::: footer
+:::
+
+## Estadístico de cómo quedó la asignación
+
+```r
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(track) <- sample.names
+head(track)
+```
+::: footer
+:::
+
+
+## Asignación taxónomica
+En esta parte se mapean las lecturas resultantes a una base de datos, en este caso SILVA para hacer la asignación.
+
+Deben  descargar la versión más reciente disponible [Silva for Dada 2](https://benjjneb.github.io/dada2/training.html)
+
+Esta parte **puede** ser computacionalmente pesada. Ya generé el objeto [acá]("03_Results/taxa.RDS")
+
+
+```r
+taxa <- assignTaxonomy(seqtab.nochim, "01_Raw_Data/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
+#saveRDS(taxa, file="03_Results/taxa.RDS")
+#writeRDS(file="03_Results/taxa.RDS")
 ```
 
 
