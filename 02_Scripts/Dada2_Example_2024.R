@@ -143,6 +143,22 @@ ps
 save(ps,file="03_Results/ps.RDS")
 
 
-png("03_Results/Alfa_Diversity.png",width=610,height = 367)
+jpeg("03_Results/Alfa_Diversity.jpeg",width=610,height = 367)
 plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
+dev.off()
+
+
+# Transform data to proportions as appropriate for Bray-Curtis distances
+ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
+jpeg("03_Results/NMDS.jpeg")
+plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
+dev.off()
+
+
+top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]
+ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
+ps.top20 <- prune_taxa(top20, ps.top20)
+jpeg("03_Results/BarPlot.jpeg")
+plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x")
 dev.off()
